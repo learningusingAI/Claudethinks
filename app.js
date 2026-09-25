@@ -2,7 +2,6 @@
   'use strict';
 
   const STORAGE_KEY = 'claudethinks.notes.v1';
-  const THEME_KEY = 'claudethinks.theme';
   const DELETED_KEY = 'claudethinks.deleted.v1';
   const SYNC_KEY = 'claudethinks.sync.v1';
   const TOKEN_KEY = 'claudethinks.sync.token';
@@ -402,23 +401,6 @@
   });
 
   describeSyncState();
-
-  // --- Theme ---------------------------------------------------------------
-
-  function applyTheme(theme) {
-    if (theme) document.documentElement.dataset.theme = theme;
-    else delete document.documentElement.dataset.theme;
-  }
-
-  try { applyTheme(localStorage.getItem(THEME_KEY)); } catch { /* storage unavailable */ }
-
-  $('#btn-theme').addEventListener('click', () => {
-    const current = document.documentElement.dataset.theme
-      || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-    const next = current === 'dark' ? 'light' : 'dark';
-    applyTheme(next);
-    try { localStorage.setItem(THEME_KEY, next); } catch { /* storage unavailable */ }
-  });
 
   render();
 })();

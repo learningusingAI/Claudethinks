@@ -29,7 +29,7 @@ Pilih salah satu:
 
 Catatan disimpan di `localStorage` browser yang kamu pakai:
 
-- Tidak tersinkron antar perangkat atau browser.
+- Tidak tersinkron antar perangkat atau browser, kecuali kamu memakai fitur Sinkron di bawah.
 - Tidak terenkripsi — jangan simpan data sensitif (keuangan, data pribadi, dsb.).
 - Bisa hilang jika data situs dihapus. Gunakan **Ekspor** untuk cadangan.
 

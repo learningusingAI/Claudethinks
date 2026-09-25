@@ -1,0 +1,177 @@
+:root {
+  --bg: #f7f6f3;
+  --surface: #ffffff;
+  --text: #1f1f1f;
+  --muted: #6b6b6b;
+  --border: #e2e0da;
+  --accent: #b4532a;
+  --accent-text: #ffffff;
+  --tag-bg: #f1e7e1;
+  --tag-text: #7a3419;
+  --danger: #b3261e;
+  --radius: 10px;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #161615;
+    --surface: #202020;
+    --text: #ecebe8;
+    --muted: #a09e99;
+    --border: #34332f;
+    --accent: #e0875f;
+    --accent-text: #1a0d06;
+    --tag-bg: #3a2a22;
+    --tag-text: #f2c3ab;
+    --danger: #f28b82;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #161615;
+  --surface: #202020;
+  --text: #ecebe8;
+  --muted: #a09e99;
+  --border: #34332f;
+  --accent: #e0875f;
+  --accent-text: #1a0d06;
+  --tag-bg: #3a2a22;
+  --tag-text: #f2c3ab;
+  --danger: #f28b82;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 20px 16px 8px;
+}
+
+.topbar h1 { margin: 0; font-size: 1.4rem; letter-spacing: -0.01em; min-width: 0; }
+.topbar-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.topbar-actions button, .topbar-actions .button { padding: 6px 10px; }
+
+.layout {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 0 16px 24px;
+  display: grid;
+  gap: 20px;
+}
+
+input, textarea, select, button, .button {
+  font: inherit;
+  color: inherit;
+}
+
+input[type="text"], input[type="search"], textarea, select {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+textarea { resize: vertical; min-height: 110px; }
+
+input:focus, textarea:focus, select:focus, button:focus-visible, .button:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+button, .button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 14px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: var(--accent-text);
+  cursor: pointer;
+}
+
+button.ghost, .button.ghost {
+  background: transparent;
+  color: var(--text);
+  border-color: var(--border);
+}
+
+button.danger { color: var(--danger); }
+
+.composer form {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.form-actions { display: flex; align-items: center; gap: 8px; }
+.form-actions .muted { margin-right: auto; font-size: 0.9rem; }
+
+.filters { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+.filters select { width: auto; }
+
+.tag-bar { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+
+.tag {
+  padding: 2px 10px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: var(--tag-bg);
+  color: var(--tag-text);
+  font-size: 0.85rem;
+}
+
+.tag-bar .tag { cursor: pointer; }
+.tag-bar .tag.active { border-color: var(--accent); font-weight: 600; }
+
+.note-list { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 12px; }
+
+.note {
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.note h2 { margin: 0 0 4px; font-size: 1.05rem; }
+.note-body { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.note-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; }
+.note-meta time { margin-right: auto; }
+.note-meta button { padding: 4px 10px; font-size: 0.85rem; }
+
+.muted { color: var(--muted); }
+.empty { text-align: center; color: var(--muted); padding: 32px 0; }
+#count { margin: 10px 0 0; font-size: 0.9rem; }
+mark { background: var(--tag-bg); color: inherit; border-radius: 3px; }
+
+.foot {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 8px 16px 32px;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 480px) {
+  .filters { grid-template-columns: 1fr; }
+  .filters select { width: 100%; }
+}

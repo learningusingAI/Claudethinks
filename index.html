@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Claudethinks</title>
+  <meta name="description" content="Jurnal pikiran sederhana: tulis, beri tag, dan cari catatan. Data tersimpan di browser.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>Claudethinks</h1>
+    <div class="topbar-actions">
+      <button id="btn-export" class="ghost" title="Unduh semua catatan sebagai JSON">Ekspor</button>
+      <label class="ghost button" title="Muat catatan dari file JSON">
+        Impor<input id="input-import" type="file" accept="application/json" hidden>
+      </label>
+      <button id="btn-theme" class="ghost" title="Ganti tema" aria-label="Ganti tema">◐</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="composer" aria-label="Tulis catatan">
+      <form id="note-form">
+        <input id="note-title" type="text" placeholder="Judul (opsional)" maxlength="120">
+        <textarea id="note-body" rows="5" placeholder="Apa yang sedang kamu pikirkan?" required></textarea>
+        <input id="note-tags" type="text" placeholder="Tag, pisahkan dengan koma — mis. ide, kerja">
+        <div class="form-actions">
+          <span id="form-mode" class="muted"></span>
+          <button type="button" id="btn-cancel" class="ghost" hidden>Batal</button>
+          <button type="submit" id="btn-save">Simpan</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="browser" aria-label="Daftar catatan">
+      <div class="filters">
+        <input id="search" type="search" placeholder="Cari judul, isi, atau tag…" aria-label="Cari catatan">
+        <select id="sort" aria-label="Urutkan">
+          <option value="updated-desc">Terbaru diubah</option>
+          <option value="created-desc">Terbaru dibuat</option>
+          <option value="created-asc">Terlama dibuat</option>
+          <option value="title-asc">Judul A–Z</option>
+        </select>
+      </div>
+      <div id="tag-bar" class="tag-bar"></div>
+      <p id="count" class="muted"></p>
+      <ul id="note-list" class="note-list"></ul>
+      <p id="empty" class="empty" hidden>Belum ada catatan. Tulis yang pertama di atas.</p>
+    </section>
+  </main>
+
+  <footer class="foot muted">
+    Catatan hanya tersimpan di browser ini (localStorage, tidak terenkripsi). Jangan simpan data sensitif.
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

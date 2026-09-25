@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Game Retro · Claudethinks</title>
+  <meta name="description" content="Tiga game bergaya retro: Ular, Bata, dan Balok. Bisa dimainkan dengan keyboard atau layar sentuh.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>Claudethinks</h1>
+    <div class="topbar-actions">
+      <button id="btn-theme" class="ghost" title="Ganti tema" aria-label="Ganti tema">◐</button>
+    </div>
+  </header>
+
+  <nav class="tabs" aria-label="Halaman">
+    <a href="./">Catatan</a>
+    <a href="games.html" aria-current="page">Game Retro</a>
+  </nav>
+
+  <main class="layout games">
+    <div class="game-picker" role="group" aria-label="Pilih game">
+      <button type="button" class="ghost" data-game="snake">Ular</button>
+      <button type="button" class="ghost" data-game="breakout">Bata</button>
+      <button type="button" class="ghost" data-game="blocks">Balok</button>
+    </div>
+
+    <div class="hud">
+      <span>Skor <b id="hud-score">0</b></span>
+      <span>Terbaik <b id="hud-best">0</b></span>
+      <span id="hud-extra" class="muted"></span>
+    </div>
+
+    <div class="screen">
+      <canvas id="screen" width="240" height="320" tabindex="0" role="img" aria-label="Layar game"></canvas>
+    </div>
+
+    <div class="game-actions">
+      <button type="button" id="btn-start">Mulai</button>
+      <button type="button" id="btn-restart" class="ghost">Ulang</button>
+    </div>
+
+    <div class="pad" aria-label="Kontrol sentuh">
+      <button type="button" data-act="up" aria-label="Atas">▲</button>
+      <button type="button" data-act="left" aria-label="Kiri">◀</button>
+      <button type="button" data-act="down" aria-label="Bawah">▼</button>
+      <button type="button" data-act="right" aria-label="Kanan">▶</button>
+      <button type="button" data-act="act" class="pad-act" aria-label="Aksi">●</button>
+    </div>
+
+    <p id="help" class="muted small help"></p>
+  </main>
+
+  <footer class="foot muted">
+    Game dibuat khusus untuk situs ini, terinspirasi dari game klasik. Skor tertinggi hanya tersimpan di browser ini.
+  </footer>
+
+  <script src="theme.js"></script>
+  <script src="games.js"></script>
+</body>
+</html>

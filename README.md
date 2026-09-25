@@ -24,6 +24,22 @@ Pilih salah satu:
 - Tema terang/gelap (mengikuti sistem, bisa diganti manual)
 - `Ctrl`/`Cmd` + `Enter` untuk menyimpan
 - Sinkron manual ke file JSON di repo GitHub **private** (lihat di bawah)
+- Tab **Game Retro** dengan tiga game: Ular, Bata, dan Balok
+
+## Game Retro
+
+Tab **Game Retro** (`games.html`) berisi tiga game bergaya retro yang dibuat khusus untuk situs ini
+(bukan emulator dan tanpa ROM):
+
+| Game | Kontrol keyboard |
+|---|---|
+| **Ular** — makan kotak merah, jangan tabrak dinding atau badan sendiri | Panah / WASD |
+| **Bata** — pecahkan semua bata dengan bola | ←/→ atau geser mouse, Spasi untuk melepas bola |
+| **Balok** — susun balok jatuh sampai satu baris penuh | ←/→ geser, ↑ putar, ↓ turun cepat, Spasi jatuhkan |
+
+Enter memulai/menjeda, P atau Esc menjeda. Di layar sentuh muncul tombol arah dan tombol aksi (●);
+ketuk layar game untuk mulai. Game otomatis dijeda saat tab disembunyikan. Skor tertinggi per game
+disimpan di `localStorage` browser ini dan tidak ikut disinkron.
 
 ## Penyimpanan data
 

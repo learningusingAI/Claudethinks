@@ -80,7 +80,7 @@ input, textarea, select, button, .button {
   color: inherit;
 }
 
-input[type="text"], input[type="search"], textarea, select {
+input[type="text"], input[type="search"], input[type="password"], textarea, select {
   width: 100%;
   padding: 10px 12px;
   background: var(--surface);
@@ -175,3 +175,33 @@ mark { background: var(--tag-bg); color: inherit; border-radius: 3px; }
   .filters { grid-template-columns: 1fr; }
   .filters select { width: 100%; }
 }
+
+.sync-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+.sync-bar .muted { min-width: 0; overflow-wrap: anywhere; }
+.sync-bar.error #sync-status { color: var(--danger); }
+.sync-actions { display: flex; gap: 6px; }
+.sync-actions button { padding: 4px 12px; font-size: 0.9rem; }
+
+dialog {
+  width: min(460px, calc(100vw - 32px));
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+}
+dialog::backdrop { background: rgb(0 0 0 / 0.45); }
+dialog form { display: grid; gap: 10px; padding: 18px; }
+dialog h2 { margin: 0; font-size: 1.15rem; }
+dialog label { display: grid; gap: 4px; font-size: 0.9rem; }
+dialog label.check { display: flex; align-items: center; gap: 8px; }
+#btn-sync-forget { margin-right: auto; }
+dialog .form-actions { flex-wrap: wrap; }
+.small { margin: 0; font-size: 0.85rem; }

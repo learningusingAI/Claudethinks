@@ -3,6 +3,9 @@
 
   const STORAGE_KEY = 'claudethinks.notes.v1';
   const THEME_KEY = 'claudethinks.theme';
+  const DELETED_KEY = 'claudethinks.deleted.v1';
+  const SYNC_KEY = 'claudethinks.sync.v1';
+  const TOKEN_KEY = 'claudethinks.sync.token';
 
   const $ = (sel) => document.querySelector(sel);
   const form = $('#note-form');
@@ -20,6 +23,7 @@
   const emptyEl = $('#empty');
 
   let notes = load();
+  let deleted = loadDeleted(); // id -> deletedAt, so deletions survive a sync merge
   let editingId = null;
   let activeTag = null;
 
@@ -35,9 +39,19 @@
     }
   }
 
+  function loadDeleted() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(DELETED_KEY) || '{}');
+      return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
+
   function save() {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
+      localStorage.setItem(DELETED_KEY, JSON.stringify(deleted));
     } catch {
       alert('Gagal menyimpan ke browser. Ekspor catatanmu agar tidak hilang.');
     }
@@ -209,6 +223,7 @@
   function removeNote(id) {
     if (!confirm('Hapus catatan ini? Tindakan ini tidak bisa dibatalkan.')) return;
     notes = notes.filter((n) => n.id !== id);
+    deleted[id] = Date.now();
     if (editingId === id) resetForm();
     save();
     render();
@@ -259,7 +274,7 @@
       const incoming = JSON.parse(await file.text());
       if (!Array.isArray(incoming)) throw new Error('bukan array');
       const valid = incoming.filter(isValidNote);
-      const known = new Set(notes.map((n) => n.id));
+      const known = new Set([...notes.map((n) => n.id), ...Object.keys(deleted)]);
       const added = valid.filter((n) => !known.has(n.id));
       notes = [...added, ...notes];
       save();
@@ -269,6 +284,124 @@
       alert('File tidak valid. Gunakan file JSON hasil Ekspor.');
     }
   });
+
+  // --- GitHub sync -------------------------------------------------------
+
+  const syncBar = $('.sync-bar');
+  const syncStatus = $('#sync-status');
+  const btnSync = $('#btn-sync');
+  const syncDialog = $('#sync-dialog');
+  const syncForm = $('#sync-form');
+  const syncFields = {
+    owner: $('#sync-owner'),
+    repo: $('#sync-repo'),
+    path: $('#sync-path'),
+    branch: $('#sync-branch'),
+    token: $('#sync-token'),
+  };
+  const syncRemember = $('#sync-remember');
+
+  function storageGet(store, key) {
+    try { return store.getItem(key); } catch { return null; }
+  }
+
+  function storageSet(store, key, value) {
+    try {
+      if (value === null) store.removeItem(key);
+      else store.setItem(key, value);
+    } catch { /* storage unavailable */ }
+  }
+
+  function loadSyncConfig() {
+    let cfg = {};
+    try { cfg = JSON.parse(storageGet(localStorage, SYNC_KEY) || '{}') || {}; } catch { cfg = {}; }
+    cfg.token = storageGet(localStorage, TOKEN_KEY) || storageGet(sessionStorage, TOKEN_KEY) || '';
+    cfg.remember = Boolean(storageGet(localStorage, TOKEN_KEY));
+    return cfg;
+  }
+
+  function isConfigured(cfg) {
+    return Boolean(cfg.owner && cfg.repo && cfg.path && cfg.token);
+  }
+
+  function setSyncStatus(text, isError = false) {
+    syncStatus.textContent = text;
+    syncBar.classList.toggle('error', isError);
+  }
+
+  function describeSyncState() {
+    const cfg = loadSyncConfig();
+    if (!cfg.owner || !cfg.repo) return setSyncStatus('Sinkron GitHub belum diatur.');
+    if (!cfg.token) return setSyncStatus(`Repo ${cfg.owner}/${cfg.repo} — masukkan token lewat "Atur".`);
+    const last = Number(storageGet(localStorage, SYNC_KEY + '.last'));
+    setSyncStatus(last
+      ? `Terakhir sinkron ${formatDate(last)} · ${cfg.owner}/${cfg.repo}`
+      : `Siap sinkron ke ${cfg.owner}/${cfg.repo}`);
+  }
+
+  function openSyncDialog() {
+    const cfg = loadSyncConfig();
+    syncFields.owner.value = cfg.owner || '';
+    syncFields.repo.value = cfg.repo || '';
+    syncFields.path.value = cfg.path || 'notes.json';
+    syncFields.branch.value = cfg.branch || '';
+    syncFields.token.value = cfg.token || '';
+    syncRemember.checked = cfg.remember;
+    syncDialog.showModal();
+  }
+
+  syncForm.addEventListener('submit', () => {
+    const cfg = {
+      owner: syncFields.owner.value.trim(),
+      repo: syncFields.repo.value.trim(),
+      path: syncFields.path.value.trim().replace(/^\/+/, '') || 'notes.json',
+      branch: syncFields.branch.value.trim(),
+    };
+    const token = syncFields.token.value.trim();
+    storageSet(localStorage, SYNC_KEY, JSON.stringify(cfg));
+    storageSet(localStorage, TOKEN_KEY, syncRemember.checked && token ? token : null);
+    storageSet(sessionStorage, TOKEN_KEY, !syncRemember.checked && token ? token : null);
+    describeSyncState();
+  });
+
+  $('#btn-sync-close').addEventListener('click', () => syncDialog.close());
+
+  $('#btn-sync-forget').addEventListener('click', () => {
+    if (!confirm('Hapus pengaturan sinkron dan token dari perangkat ini? Catatan tidak ikut terhapus.')) return;
+    [SYNC_KEY, SYNC_KEY + '.last', TOKEN_KEY].forEach((k) => storageSet(localStorage, k, null));
+    storageSet(sessionStorage, TOKEN_KEY, null);
+    syncDialog.close();
+    describeSyncState();
+  });
+
+  $('#btn-sync-settings').addEventListener('click', openSyncDialog);
+
+  btnSync.addEventListener('click', async () => {
+    const cfg = loadSyncConfig();
+    if (!isConfigured(cfg)) { openSyncDialog(); return; }
+
+    btnSync.disabled = true;
+    setSyncStatus('Menyinkronkan…');
+    try {
+      const { data, pushed } = await window.ClaudethinksSync.syncNotes(cfg, { notes, deleted });
+      notes = data.notes.filter(isValidNote);
+      deleted = data.deleted;
+      if (editingId && !notes.some((n) => n.id === editingId)) resetForm();
+      save();
+      storageSet(localStorage, SYNC_KEY + '.last', String(Date.now()));
+      render();
+      describeSyncState();
+      if (!pushed) setSyncStatus(syncStatus.textContent + ' · sudah sama');
+    } catch (err) {
+      const known = err instanceof window.ClaudethinksSync.SyncError;
+      setSyncStatus(known ? err.message : 'Sinkron gagal karena kesalahan tak terduga.', true);
+      if (!known) console.error(err);
+    } finally {
+      btnSync.disabled = false;
+    }
+  });
+
+  describeSyncState();
 
   // --- Theme ---------------------------------------------------------------
 

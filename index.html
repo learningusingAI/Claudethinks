@@ -20,6 +20,14 @@
   </header>
 
   <main class="layout">
+    <section class="sync-bar" aria-label="Sinkron GitHub">
+      <span id="sync-status" class="muted" role="status">Sinkron GitHub belum diatur.</span>
+      <div class="sync-actions">
+        <button type="button" id="btn-sync-settings" class="ghost">Atur</button>
+        <button type="button" id="btn-sync" class="ghost">Sinkron</button>
+      </div>
+    </section>
+
     <section class="composer" aria-label="Tulis catatan">
       <form id="note-form">
         <input id="note-title" type="text" placeholder="Judul (opsional)" maxlength="120">
@@ -50,10 +58,38 @@
     </section>
   </main>
 
+  <dialog id="sync-dialog" aria-labelledby="sync-title">
+    <form id="sync-form" method="dialog">
+      <h2 id="sync-title">Sinkron ke GitHub</h2>
+      <p class="muted small">
+        Catatan disimpan sebagai file JSON di repo <strong>private</strong> milikmu. Gunakan
+        fine-grained token yang hanya punya akses ke repo itu, dengan permission
+        <em>Contents: Read and write</em>.
+      </p>
+      <label>Pemilik repo<input id="sync-owner" type="text" required autocomplete="off" spellcheck="false" placeholder="mis. learningusingAI"></label>
+      <label>Nama repo (private)<input id="sync-repo" type="text" required autocomplete="off" spellcheck="false" placeholder="mis. claudethinks-data"></label>
+      <label>Path file<input id="sync-path" type="text" required autocomplete="off" spellcheck="false" value="notes.json"></label>
+      <label>Branch <span class="muted">(kosongkan = branch default)</span><input id="sync-branch" type="text" autocomplete="off" spellcheck="false"></label>
+      <label>Token<input id="sync-token" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_…"></label>
+      <label class="check"><input id="sync-remember" type="checkbox"> Ingat token di perangkat ini</label>
+      <p class="muted small">
+        Tanpa centang, token hilang saat tab ditutup. Dengan centang, token tersimpan tanpa enkripsi di browser ini —
+        jangan centang di perangkat bersama.
+      </p>
+      <div class="form-actions">
+        <button type="button" id="btn-sync-forget" class="ghost danger" title="Hapus pengaturan sinkron dan token dari perangkat ini">Lupakan</button>
+        <button type="button" id="btn-sync-close" class="ghost">Tutup</button>
+        <button type="submit" id="btn-sync-save">Simpan</button>
+      </div>
+    </form>
+  </dialog>
+
   <footer class="foot muted">
-    Catatan hanya tersimpan di browser ini (localStorage, tidak terenkripsi). Jangan simpan data sensitif.
+    Catatan tersimpan di browser ini (localStorage, tidak terenkripsi) dan, jika diatur, di repo GitHub private milikmu.
+    Riwayat git menyimpan semua versi, termasuk catatan yang sudah dihapus — jangan simpan data sensitif.
   </footer>
 
+  <script src="sync.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

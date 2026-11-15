@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Asisten Trading · Claudethinks</title>
+  <meta name="description" content="Alat bantu proses trading saham: cek pasar harian, analisis teknikal VCP, CANSLIM, ukuran posisi, gerbang disiplin, dan jurnal trade. Bukan sinyal beli/jual.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>Claudethinks</h1>
+    <div class="topbar-actions">
+      <button id="btn-theme" class="ghost" title="Ganti tema" aria-label="Ganti tema">◐</button>
+    </div>
+  </header>
+
+  <nav class="tabs" aria-label="Halaman">
+    <a href="./">Catatan</a>
+    <a href="trading.html" aria-current="page">Trading</a>
+    <a href="games.html">Game Retro</a>
+  </nav>
+
+  <main class="layout trading">
+    <p class="notice small">
+      Alat bantu <strong>proses</strong>, bukan sinyal beli/jual. Semua keputusan, ukuran posisi, dan risiko tetap di tanganmu.
+      Logika diadaptasi dari <a href="https://github.com/tradermonty/claude-trading-skills" rel="noopener">claude-trading-skills</a> (MIT).
+    </p>
+
+    <div class="subtabs" role="tablist" aria-label="Alat trading">
+      <button type="button" role="tab" data-panel="pasar">1 · Pasar</button>
+      <button type="button" role="tab" data-panel="analisis">2 · Analisis</button>
+      <button type="button" role="tab" data-panel="ukuran">3 · Ukuran</button>
+      <button type="button" role="tab" data-panel="gerbang">4 · Gerbang</button>
+      <button type="button" role="tab" data-panel="jurnal">5 · Jurnal</button>
+      <button type="button" role="tab" data-panel="setelan">Setelan</button>
+    </div>
+
+    <!-- 1. Market check ---------------------------------------------------- -->
+    <section id="panel-pasar" class="panel" role="tabpanel" hidden>
+      <h2>Cek pasar harian</h2>
+      <p class="muted small">
+        Isi apa yang kamu amati dari indeks acuan (mis. IHSG atau LQ45) sebelum menambah risiko baru hari ini.
+        Kolom yang dikosongkan dianggap tidak tersedia dan menurunkan tingkat keyakinan — jangan diisi dengan tebakan.
+      </p>
+      <form id="market-form" class="card grid-form">
+        <label>Rezim makro
+          <select id="m-regime">
+            <option value="">— tidak diisi —</option>
+            <option value="broadening">Melebar (banyak sektor ikut naik)</option>
+            <option value="concentration">Terkonsentrasi (hanya segelintir saham besar)</option>
+            <option value="transitional">Transisi / tidak jelas</option>
+            <option value="inflationary">Inflasioner (suku bunga/harga naik menekan)</option>
+            <option value="contraction">Kontraksi (risk-off)</option>
+          </select>
+        </label>
+        <label>Distribution day dalam 25 sesi terakhir
+          <input id="m-dist" type="number" min="0" max="25" step="1" inputmode="numeric" placeholder="mis. 3">
+          <span class="hint">Hari indeks turun ≥0,2% dengan volume lebih tinggi dari hari sebelumnya.</span>
+        </label>
+        <label>% saham di atas MA200
+          <input id="m-breadth" type="number" min="0" max="100" step="1" inputmode="decimal" placeholder="mis. 55">
+          <span class="hint">Breadth: seberapa luas partisipasi pasar.</span>
+        </label>
+        <label>% saham dalam tren naik (di atas MA50 &amp; MA50 &gt; MA200)
+          <input id="m-uptrend" type="number" min="0" max="100" step="1" inputmode="decimal" placeholder="mis. 40">
+        </label>
+        <label>Follow-through day (opsional)
+          <select id="m-ftd">
+            <option value="">— tidak diisi —</option>
+            <option value="80">Ada FTD kuat dalam 10 sesi terakhir</option>
+            <option value="50">Tidak relevan / indeks sudah tren naik</option>
+            <option value="20">Masih koreksi, belum ada FTD</option>
+          </select>
+        </label>
+        <label>Aliran dana asing / institusi (opsional)
+          <select id="m-flow">
+            <option value="">— tidak diisi —</option>
+            <option value="75">Net beli konsisten</option>
+            <option value="50">Campuran</option>
+            <option value="25">Net jual konsisten</option>
+          </select>
+        </label>
+        <div class="form-actions span-all">
+          <span class="muted small">Disimpan per tanggal di browser ini.</span>
+          <button type="submit">Hitung postur</button>
+        </div>
+      </form>
+      <div id="market-result" class="card result" hidden></div>
+      <details class="card">
+        <summary>Cara skor dihitung</summary>
+        <ul class="small">
+          <li>Bobot dari exposure-coach: rezim 25%, risiko puncak 20%, breadth 15%, uptrend 15%, institusi 10%, FTD 5%. Bobot dinormalkan ulang hanya atas kolom yang diisi.</li>
+          <li>Skor rezim: melebar 80, terkonsentrasi 60, transisi 50, inflasioner 40, kontraksi 20.</li>
+          <li>Risiko puncak (makin tinggi makin aman): 0–2 distribution day = 80, 3–4 = 60, 5 = 40, 6 = 30, ≥7 = 15. <em>Pemetaan ini penyederhanaan, bukan rumus asli market-top-detector.</em></li>
+          <li>Breadth dan uptrend memakai persentase apa adanya sebagai skor.</li>
+          <li><b>CASH_PRIORITY</b> bila skor &lt; 30 atau risiko puncak &lt; 25. <b>REDUCE_ONLY</b> bila skor &lt; 50, risiko puncak &lt; 40, atau ≥2 dari 3 input kritis (rezim, risiko puncak, breadth) kosong.</li>
+        </ul>
+      </details>
+      <div id="market-history"></div>
+    </section>
+
+    <!-- 2. Analysis --------------------------------------------------------- -->
+    <section id="panel-analisis" class="panel" role="tabpanel" hidden>
+      <h2>Analisis teknikal &amp; VCP</h2>
+      <p class="muted small">
+        Unggah data harga harian (CSV: Date, Open, High, Low, Close, Volume — mis. ekspor dari Yahoo Finance atau aplikasi broker).
+        Minimal ~260 baris agar MA200 dan 52 minggu bisa dihitung. Data diproses di browser dan tidak disimpan.
+      </p>
+      <div class="card grid-form">
+        <label>Kode saham
+          <input id="a-symbol" type="text" maxlength="12" autocomplete="off" spellcheck="false" placeholder="mis. BBCA">
+        </label>
+        <label>File harga saham (CSV)
+          <input id="a-file" type="file" accept=".csv,text/csv,text/plain">
+        </label>
+        <label>File indeks acuan untuk RS (opsional)
+          <input id="a-bench" type="file" accept=".csv,text/csv,text/plain">
+          <span class="hint">Mis. ^JKSE. Tanpa ini, kriteria kekuatan relatif tidak dinilai.</span>
+        </label>
+        <div class="form-actions span-all">
+          <button type="button" id="a-sample" class="ghost" title="Data acak buatan, bukan harga saham nyata">Coba data contoh (sintetis)</button>
+          <button type="button" id="a-run">Analisis</button>
+        </div>
+      </div>
+      <p id="a-error" class="error small" role="alert" hidden></p>
+      <div id="a-output" hidden>
+        <div class="card chart-card">
+          <canvas id="a-chart" width="720" height="360" role="img" aria-label="Grafik harga dengan MA50, MA150, MA200, pivot dan stop"></canvas>
+          <div class="legend small">
+            <span><i class="sw sw-ma50"></i>MA50</span>
+            <span><i class="sw sw-ma150"></i>MA150</span>
+            <span><i class="sw sw-ma200"></i>MA200</span>
+            <span><i class="sw sw-pivot"></i>Pivot</span>
+            <span><i class="sw sw-stop"></i>Stop</span>
+          </div>
+        </div>
+        <div id="a-report" class="card result"></div>
+        <div class="form-actions">
+          <span class="muted small">Kirim pivot &amp; stop ke kalkulator ukuran posisi.</span>
+          <button type="button" id="a-to-sizer" class="ghost">Pakai di Ukuran →</button>
+        </div>
+      </div>
+
+      <h2>Cek CANSLIM (manual)</h2>
+      <p class="muted small">Isi dari laporan keuangan atau situs data. Kolom kosong = tidak dinilai.</p>
+      <form id="canslim-form" class="card grid-form">
+        <label>C · Pertumbuhan EPS kuartal terakhir (YoY, %)<input id="c-c" type="number" step="any" inputmode="decimal" placeholder="≥ 25"></label>
+        <label>A · Pertumbuhan EPS tahunan rata-rata 3 tahun (%)<input id="c-a" type="number" step="any" inputmode="decimal" placeholder="≥ 25"></label>
+        <label>N · Ada katalis baru? (produk, manajemen, harga tertinggi baru)
+          <select id="c-n"><option value="">— tidak diisi —</option><option value="1">Ya</option><option value="0">Tidak</option></select>
+        </label>
+        <label>S · Volume saat naik vs saat turun (rasio)<input id="c-s" type="number" step="any" inputmode="decimal" placeholder="&gt; 1"></label>
+        <label>L · Skor kekuatan relatif (0–100)<input id="c-l" type="number" min="0" max="100" step="1" inputmode="numeric" placeholder="≥ 80; otomatis dari analisis bila ada"></label>
+        <label>I · Kepemilikan institusi bertambah kuartal ini?
+          <select id="c-i"><option value="">— tidak diisi —</option><option value="1">Ya</option><option value="0">Tidak</option></select>
+        </label>
+        <label>M · Postur pasar hari ini
+          <select id="c-m"><option value="">Ambil dari tab Pasar</option><option value="1">Mengizinkan entri baru</option><option value="0">Tidak mengizinkan</option></select>
+        </label>
+        <div class="form-actions span-all"><button type="submit">Nilai</button></div>
+      </form>
+      <div id="canslim-result" class="card result" hidden></div>
+    </section>
+
+    <!-- 3. Position sizer --------------------------------------------------- -->
+    <section id="panel-ukuran" class="panel" role="tabpanel" hidden>
+      <h2>Ukuran posisi</h2>
+      <form id="sizer-form" class="card grid-form">
+        <label>Metode
+          <select id="s-method">
+            <option value="fixed">Risiko tetap (entri &amp; stop)</option>
+            <option value="atr">Berbasis ATR</option>
+            <option value="kelly">Kelly (dari statistik jurnal)</option>
+          </select>
+        </label>
+        <label>Modal akun (Rp)<input id="s-account" type="number" min="0" step="any" inputmode="decimal" required></label>
+        <label>Kode saham<input id="s-symbol" type="text" maxlength="12" autocomplete="off" spellcheck="false"></label>
+        <label>Harga entri<input id="s-entry" type="number" min="0" step="any" inputmode="decimal" required></label>
+        <label data-method="fixed kelly">Harga stop<input id="s-stop" type="number" min="0" step="any" inputmode="decimal"></label>
+        <label data-method="atr">ATR (14)<input id="s-atr" type="number" min="0" step="any" inputmode="decimal"></label>
+        <label data-method="atr">Pengali ATR<input id="s-atrmult" type="number" min="0.1" step="0.1" value="2" inputmode="decimal"></label>
+        <label data-method="fixed atr">Risiko per trade (% modal)<input id="s-risk" type="number" min="0.05" max="10" step="0.05" value="1" inputmode="decimal"></label>
+        <label data-method="kelly">Win rate (%)<input id="s-wr" type="number" min="0" max="100" step="any" inputmode="decimal"></label>
+        <label data-method="kelly">Rata-rata untung / rata-rata rugi (R)<input id="s-payoff" type="number" min="0" step="any" inputmode="decimal"></label>
+        <label>Maks. ukuran posisi (% modal)<input id="s-maxpos" type="number" min="1" max="100" step="1" value="20" inputmode="numeric"></label>
+        <div class="form-actions span-all">
+          <button type="button" id="s-from-journal" class="ghost" data-method="kelly">Isi dari jurnal</button>
+          <button type="submit">Hitung</button>
+        </div>
+      </form>
+      <div id="sizer-result" class="card result" hidden></div>
+    </section>
+
+    <!-- 4. Discipline gate -------------------------------------------------- -->
+    <section id="panel-gerbang" class="panel" role="tabpanel" hidden>
+      <h2>Gerbang disiplin sebelum order</h2>
+      <p class="muted small">Jalankan tepat sebelum memasang order di broker. Alat ini tidak memasang order apa pun.</p>
+      <div id="breaker-status" class="card result"></div>
+      <form id="gate-form" class="card grid-form">
+        <label>Kode saham<input id="g-symbol" type="text" maxlength="12" autocomplete="off" spellcheck="false" required></label>
+        <label>Risiko terencana (Rp)<input id="g-planned" type="number" min="0" step="any" inputmode="decimal"></label>
+        <label>Risiko aktual order ini (Rp)<input id="g-actual" type="number" min="0" step="any" inputmode="decimal"></label>
+        <label class="check span-all"><input id="g-plan" type="checkbox"> Entri ini sudah tertulis di rencana sebelum pasar bergerak</label>
+        <label class="check span-all"><input id="g-stop" type="checkbox"> Harga stop sudah ditentukan sebelum order</label>
+        <label class="check span-all"><input id="g-size" type="checkbox"> Ukuran posisi sesuai rencana (tidak dinaikkan karena yakin)</label>
+        <div class="form-actions span-all"><button type="submit">Periksa</button></div>
+      </form>
+      <div id="gate-result" class="card result" hidden></div>
+    </section>
+
+    <!-- 5. Journal ---------------------------------------------------------- -->
+    <section id="panel-jurnal" class="panel" role="tabpanel" hidden>
+      <h2>Jurnal trade</h2>
+      <div id="journal-stats" class="stats"></div>
+      <form id="trade-form" class="card grid-form">
+        <label>Kode saham<input id="t-symbol" type="text" maxlength="12" autocomplete="off" spellcheck="false" required></label>
+        <label>Setup
+          <select id="t-setup">
+            <option>VCP breakout</option><option>Pullback ke MA</option><option>Episodic pivot</option>
+            <option>Dividen / jangka panjang</option><option>Lainnya</option>
+          </select>
+        </label>
+        <label>Tanggal masuk<input id="t-edate" type="date" required></label>
+        <label>Harga masuk<input id="t-entry" type="number" min="0" step="any" inputmode="decimal" required></label>
+        <label>Stop awal<input id="t-stop" type="number" min="0" step="any" inputmode="decimal" required></label>
+        <label>Jumlah saham (lembar)<input id="t-shares" type="number" min="1" step="1" inputmode="numeric" required></label>
+        <label>Tanggal keluar<input id="t-xdate" type="date"></label>
+        <label>Harga keluar<input id="t-exit" type="number" min="0" step="any" inputmode="decimal"></label>
+        <label class="span-all">Alasan masuk / pelajaran<textarea id="t-notes" rows="3" placeholder="Kenapa masuk? Apa yang berjalan sesuai rencana, apa yang tidak?"></textarea></label>
+        <label class="check span-all"><input id="t-followed" type="checkbox" checked> Saya mengikuti rencana di trade ini</label>
+        <div class="form-actions span-all">
+          <span id="t-mode" class="muted small"></span>
+          <button type="button" id="t-cancel" class="ghost" hidden>Batal</button>
+          <button type="submit" id="t-save">Simpan trade</button>
+        </div>
+      </form>
+      <div class="filters">
+        <select id="t-filter" aria-label="Saring trade">
+          <option value="all">Semua trade</option>
+          <option value="open">Masih terbuka</option>
+          <option value="closed">Sudah ditutup</option>
+        </select>
+        <div class="row-actions">
+          <button type="button" id="t-export" class="ghost">Ekspor</button>
+          <label class="ghost button">Impor<input id="t-import" type="file" accept="application/json" hidden></label>
+        </div>
+      </div>
+      <div class="table-wrap"><table id="trade-table" class="trades"></table></div>
+      <p id="t-empty" class="empty" hidden>Belum ada trade tercatat.</p>
+    </section>
+
+    <!-- Settings ------------------------------------------------------------ -->
+    <section id="panel-setelan" class="panel" role="tabpanel" hidden>
+      <h2>Setelan</h2>
+      <form id="settings-form" class="card grid-form">
+        <label>Modal akun (Rp)<input id="st-account" type="number" min="0" step="any" inputmode="decimal" placeholder="dipakai untuk pemutus rugi"></label>
+        <label>Satuan lot (lembar)<input id="st-lot" type="number" min="1" step="1" value="100" inputmode="numeric"><span class="hint">BEI: 100. Saham AS: 1.</span></label>
+        <label>Biaya beli (%)<input id="st-feebuy" type="number" min="0" step="0.01" value="0.15" inputmode="decimal"></label>
+        <label>Biaya jual (%, termasuk pajak)<input id="st-feesell" type="number" min="0" step="0.01" value="0.25" inputmode="decimal"></label>
+        <label>Batas rugi harian (% modal)<input id="st-daily" type="number" min="0" step="0.1" value="2" inputmode="decimal"></label>
+        <label>Batas rugi mingguan (%)<input id="st-weekly" type="number" min="0" step="0.1" value="5" inputmode="decimal"></label>
+        <label>Batas rugi bulanan (%)<input id="st-monthly" type="number" min="0" step="0.1" value="8" inputmode="decimal"></label>
+        <label>Rugi beruntun sebelum jeda<input id="st-streak" type="number" min="1" step="1" value="2" inputmode="numeric"></label>
+        <div class="form-actions span-all">
+          <button type="button" id="st-wipe" class="ghost danger">Hapus semua data trading</button>
+          <button type="submit">Simpan</button>
+        </div>
+      </form>
+      <p class="muted small">
+        Biaya default adalah perkiraan umum broker BEI; cek tarif brokermu sendiri.
+        Pemutus rugi mengikuti default drawdown-circuit-breaker: harian 2%, mingguan 5%, bulanan 8%, jeda setelah 2 rugi beruntun.
+      </p>
+    </section>
+  </main>
+
+  <footer class="foot muted">
+    Data trading hanya tersimpan di browser ini (localStorage, tidak terenkripsi) dan <strong>tidak ikut disinkron</strong> ke GitHub.
+    Gunakan Ekspor untuk cadangan. Bukan nasihat investasi.
+  </footer>
+
+  <script src="theme.js"></script>
+  <script src="trading.js"></script>
+</body>
+</html>

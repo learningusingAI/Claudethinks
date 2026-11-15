@@ -24,7 +24,32 @@ Pilih salah satu:
 - Tema terang/gelap (mengikuti sistem, bisa diganti manual)
 - `Ctrl`/`Cmd` + `Enter` untuk menyimpan
 - Sinkron manual ke file JSON di repo GitHub **private** (lihat di bawah)
+- Tab **Trading**: asisten proses trading saham (bukan sinyal beli/jual)
 - Tab **Game Retro** dengan tiga game: Ular, Bata, dan Balok
+
+## Asisten Trading
+
+Tab **Trading** (`trading.html`) mengadaptasi alur kerja dari
+[tradermonty/claude-trading-skills](https://github.com/tradermonty/claude-trading-skills) (MIT)
+menjadi alat di browser, tanpa API berbayar dan tanpa server. Tujuannya menstrukturkan proses,
+bukan memberi sinyal beli/jual — keputusan tetap di tanganmu.
+
+| Langkah | Diadaptasi dari | Isi |
+|---|---|---|
+| **1 · Pasar** | exposure-coach | Isi pengamatan indeks (rezim, distribution day, breadth, uptrend). Keluar: plafon eksposur dan postur `Entri baru diizinkan` / `Hanya kurangi` / `Prioritaskan kas`, plus tingkat keyakinan. |
+| **2 · Analisis** | vcp-screener, canslim-screener | Unggah CSV harga harian → grafik candlestick + MA50/150/200, Trend Template Minervini (7 kriteria), deteksi kontraksi VCP, pivot, stop, volume dry-up, status eksekusi. RS dihitung bila CSV indeks acuan diunggah. Cek CANSLIM diisi manual. |
+| **3 · Ukuran** | position-sizer | Risiko tetap, ATR, atau setengah Kelly dari statistik jurnal. Dibulatkan ke lot (default 100 lembar), dibatasi ukuran posisi maksimum, termasuk perkiraan biaya. |
+| **4 · Gerbang** | pre-trade-discipline-gate, drawdown-circuit-breaker | GO / NO GO / PERLU DITINJAU berdasarkan checklist rencana, risiko aktual vs rencana, postur pasar hari ini, batas rugi harian/mingguan/bulanan, rugi beruntun, dan trade rugi hari ini. |
+| **5 · Jurnal** | trader-memory-core | Catat trade, P&L bersih biaya, R-multiple, win rate, ekspektansi, profit factor, kepatuhan rencana, dan risiko terbuka. Ekspor/impor JSON. |
+
+Penyederhanaan yang perlu diketahui:
+
+- Skor risiko puncak dari jumlah distribution day adalah pemetaan sederhana, bukan rumus asli market-top-detector.
+- Deteksi swing VCP otomatis bisa berbeda dari penilaian mata; selalu cocokkan dengan grafik.
+- Tanggal keluar tanpa jam, jadi jeda 24 jam setelah rugi beruntun berlaku sampai akhir hari berikutnya.
+- Biaya default (beli 0,15%, jual 0,25%) adalah perkiraan umum broker BEI; sesuaikan di Setelan.
+
+Data trading hanya ada di `localStorage` browser ini dan **tidak ikut** fitur Sinkron GitHub.
 
 ## Game Retro
 

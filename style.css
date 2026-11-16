@@ -431,3 +431,21 @@ table.trades .neg { color: var(--down); }
   .trading .filters { grid-template-columns: 1fr; }
   .trading .filters .row-actions { justify-content: flex-start; }
 }
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  max-width: min(480px, calc(100vw - 32px));
+  padding: 10px 16px;
+  background: var(--text);
+  color: var(--bg);
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.25);
+  z-index: 20;
+}
+button.danger-fill { background: var(--danger); border-color: var(--danger); color: var(--surface); }
+textarea.mono { font: 0.8rem/1.4 ui-monospace, "Courier New", monospace; min-height: 180px; }
+#export-dialog { width: min(560px, calc(100vw - 32px)); }

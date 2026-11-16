@@ -21,6 +21,28 @@
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
+  // In-page replacements for alert/confirm: embedded viewers often block native dialogs.
+  let toastTimer = null;
+  function toast(msg) {
+    const el = document.getElementById('toast');
+    if (!el) return;
+    el.textContent = msg;
+    el.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { el.hidden = true; }, 5000);
+  }
+
+  function askConfirm(msg, okLabel = 'Hapus') {
+    const dlg = document.getElementById('confirm-dialog');
+    document.getElementById('confirm-text').textContent = msg;
+    document.getElementById('confirm-ok').textContent = okLabel;
+    return new Promise((resolve) => {
+      dlg.addEventListener('close', () => resolve(dlg.returnValue === 'ok'), { once: true });
+      dlg.returnValue = '';
+      dlg.showModal();
+    });
+  }
+
   // --- Helpers -------------------------------------------------------------
 
   function readJSON(key, fallback) {
@@ -37,7 +59,7 @@
       localStorage.setItem(key, JSON.stringify(value));
       return true;
     } catch {
-      alert('Gagal menyimpan ke browser. Ekspor jurnalmu agar tidak hilang.');
+      toast('Gagal menyimpan ke browser. Ekspor jurnalmu agar tidak hilang.');
       return false;
     }
   }
@@ -882,12 +904,12 @@
   $('#s-from-journal').addEventListener('click', () => {
     const s = journalStats();
     if (s.n < 1 || s.winRate === null || s.payoff === null) {
-      alert('Jurnal belum punya cukup trade tertutup (perlu ada yang untung dan yang rugi).');
+      toast('Jurnal belum punya cukup trade tertutup (perlu ada yang untung dan yang rugi).');
       return;
     }
     setVal('s-wr', Number(s.winRate.toFixed(1)));
     setVal('s-payoff', Number(s.payoff.toFixed(2)));
-    if (s.n < 30) alert(`Baru ${s.n} trade tertutup. Statistik dari sampel sekecil ini belum bisa dipercaya untuk Kelly.`);
+    if (s.n < 30) toast(`Baru ${s.n} trade tertutup. Statistik dari sampel sekecil ini belum bisa dipercaya untuk Kelly.`);
   });
 
   function sizeShares(budget, perShareRisk, entry, account, maxPosPct, lot) {
@@ -1164,10 +1186,10 @@
     const shares = num('t-shares');
     const exit = num('t-exit');
     const exitDate = $('#t-xdate').value || null;
-    if (!(entry > 0) || !(stop > 0) || !(shares > 0)) { alert('Harga masuk, stop, dan jumlah saham harus angka positif.'); return; }
-    if (stop >= entry) { alert('Stop awal harus di bawah harga masuk.'); return; }
-    if ((exit !== null) !== Boolean(exitDate)) { alert('Isi tanggal dan harga keluar bersamaan, atau kosongkan keduanya untuk trade terbuka.'); return; }
-    if (exitDate && exitDate < $('#t-edate').value) { alert('Tanggal keluar tidak boleh sebelum tanggal masuk.'); return; }
+    if (!(entry > 0) || !(stop > 0) || !(shares > 0)) { toast('Harga masuk, stop, dan jumlah saham harus angka positif.'); return; }
+    if (stop >= entry) { toast('Stop awal harus di bawah harga masuk.'); return; }
+    if ((exit !== null) !== Boolean(exitDate)) { toast('Isi tanggal dan harga keluar bersamaan, atau kosongkan keduanya untuk trade terbuka.'); return; }
+    if (exitDate && exitDate < $('#t-edate').value) { toast('Tanggal keluar tidak boleh sebelum tanggal masuk.'); return; }
     const data = {
       symbol: $('#t-symbol').value.trim().toUpperCase(),
       setup: $('#t-setup').value,
@@ -1254,18 +1276,35 @@
       $('#trade-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
     } else if (del) {
       const t = trades.find((x) => x.id === del.dataset.del);
-      if (!t || !confirm(`Hapus trade ${t.symbol} (${fmtDate(t.entryDate)})?`)) return;
-      trades = trades.filter((x) => x.id !== t.id);
-      if (editingTrade === t.id) resetTradeForm();
-      saveTrades();
-      renderJournal();
+      if (!t) return;
+      askConfirm(`Hapus trade ${t.symbol} (${fmtDate(t.entryDate)})?`).then((ok) => {
+        if (!ok) return;
+        trades = trades.filter((x) => x.id !== t.id);
+        if (editingTrade === t.id) resetTradeForm();
+        saveTrades();
+        renderJournal();
+      });
     }
   });
 
   $('#t-filter').addEventListener('change', renderJournal);
 
   $('#t-export').addEventListener('click', () => {
-    const blob = new Blob([JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), trades, market: marketLog }, null, 2)], { type: 'application/json' });
+    const json = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), trades, market: marketLog }, null, 2);
+    $('#export-text').value = json;
+    $('#export-dialog').showModal();
+  });
+
+  $('#export-copy').addEventListener('click', () => {
+    const ta = $('#export-text');
+    const fallback = () => { ta.focus(); ta.select(); toast('Teks sudah dipilih. Salin dengan Ctrl/Cmd + C.'); };
+    try {
+      navigator.clipboard.writeText(ta.value).then(() => toast('JSON jurnal disalin. Simpan di file .json.'), fallback);
+    } catch { fallback(); }
+  });
+
+  $('#export-download').addEventListener('click', () => {
+    const blob = new Blob([$('#export-text').value], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = `jurnal-trading-${today()}.json`;
@@ -1273,17 +1312,21 @@
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   });
 
+  $('#import-paste').addEventListener('click', () => {
+    const text = $('#export-text').value.trim();
+    if (!text) { toast('Tempel JSON jurnal ke kotak teks dulu.'); return; }
+    importJSON(text);
+    $('#export-dialog').close();
+  });
+
   function validTrade(t) {
     return t && typeof t.id === 'string' && typeof t.symbol === 'string' && Number(t.entry) > 0
       && Number(t.stop) > 0 && Number(t.shares) > 0 && typeof t.entryDate === 'string';
   }
 
-  $('#t-import').addEventListener('change', async (e) => {
-    const f = e.target.files[0];
-    e.target.value = '';
-    if (!f) return;
+  function importJSON(text) {
     try {
-      const data = JSON.parse(await f.text());
+      const data = JSON.parse(text);
       const incoming = (Array.isArray(data) ? data : data.trades || []).filter(validTrade).map((t) => ({
         ...t, entry: Number(t.entry), stop: Number(t.stop), shares: Number(t.shares),
         exit: t.exit === null || t.exit === undefined ? null : Number(t.exit),
@@ -1298,10 +1341,16 @@
       }
       saveTrades();
       renderJournal();
-      alert(`${added.length} trade diimpor${incoming.length - added.length ? `, ${incoming.length - added.length} dilewati karena sudah ada` : ''}.`);
+      toast(`${added.length} trade diimpor${incoming.length - added.length ? `, ${incoming.length - added.length} dilewati karena sudah ada` : ''}.`);
     } catch {
-      alert('File tidak bisa dibaca sebagai JSON jurnal.');
+      toast('Teks tidak bisa dibaca sebagai JSON jurnal.');
     }
+  }
+
+  $('#t-import').addEventListener('change', async (e) => {
+    const f = e.target.files[0];
+    e.target.value = '';
+    if (f) importJSON(await f.text());
   });
 
   // =========================================================================
@@ -1335,11 +1384,12 @@
     };
     writeJSON(KEYS.settings, settings);
     if (settings.account) setVal('s-account', settings.account);
-    alert('Setelan disimpan.');
+    toast('Setelan disimpan.');
   });
 
-  $('#st-wipe').addEventListener('click', () => {
-    if (!confirm('Hapus semua trade, riwayat cek pasar, dan setelan trading di browser ini? Tindakan ini tidak bisa dibatalkan. Ekspor dulu jika perlu.')) return;
+  $('#st-wipe').addEventListener('click', async () => {
+    const ok = await askConfirm('Hapus semua trade, riwayat cek pasar, dan setelan trading di browser ini? Tindakan ini tidak bisa dibatalkan. Ekspor dulu jika perlu.', 'Hapus semua');
+    if (!ok) return;
     Object.values(KEYS).forEach((k) => { try { localStorage.removeItem(k); } catch { /* ignore */ } });
     settings = { ...DEFAULT_SETTINGS };
     trades = [];
@@ -1349,6 +1399,7 @@
     renderJournal();
     renderMarketHistory();
     $('#market-result').hidden = true;
+    toast('Semua data trading di browser ini sudah dihapus.');
   });
 
   // --- Init ----------------------------------------------------------------

@@ -242,7 +242,7 @@
           <option value="closed">Sudah ditutup</option>
         </select>
         <div class="row-actions">
-          <button type="button" id="t-export" class="ghost">Ekspor</button>
+          <button type="button" id="t-export" class="ghost">Ekspor / tempel</button>
           <label class="ghost button">Impor<input id="t-import" type="file" accept="application/json" hidden></label>
         </div>
       </div>
@@ -273,6 +273,32 @@
       </p>
     </section>
   </main>
+
+  <dialog id="confirm-dialog" aria-labelledby="confirm-text">
+    <form method="dialog">
+      <p id="confirm-text"></p>
+      <div class="form-actions">
+        <button value="cancel" class="ghost" style="margin-left:auto">Batal</button>
+        <button value="ok" id="confirm-ok" class="danger-fill">Hapus</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="export-dialog" aria-labelledby="export-title">
+    <form method="dialog">
+      <h2 id="export-title">Cadangan jurnal (JSON)</h2>
+      <p class="muted small">Salin teks ini dan simpan sebagai file .json. Untuk memulihkan, tempel JSON cadangan di sini lalu pilih Impor dari teks.</p>
+      <textarea id="export-text" rows="10" spellcheck="false" class="mono"></textarea>
+      <div class="form-actions">
+        <button type="button" id="import-paste" class="ghost">Impor dari teks</button>
+        <button type="button" id="export-download" class="ghost">Unduh file</button>
+        <button type="button" id="export-copy">Salin</button>
+        <button value="close" class="ghost">Tutup</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" hidden></div>
 
   <footer class="foot muted">
     Data trading hanya tersimpan di browser ini (localStorage, tidak terenkripsi) dan <strong>tidak ikut disinkron</strong> ke GitHub.
